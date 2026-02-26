@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Archivum — PDF CMS</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0d0b;
+    --surface: #181614;
+    --surface2: #201e1b;
+    --border: #2e2b26;
+    --accent: #c9a96e;
+    --accent-dim: #8a6f44;
+    --text: #e8e0d0;
+    --text-muted: #7a7060;
+    --text-dim: #4a4540;
+    --danger: #c0614a;
+    --success: #5a9e72;
+    --radius: 4px;
+  }
+
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 0 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    position: sticky;
+    top: 0;
+    background: rgba(14,13,11,0.92);
+    backdrop-filter: blur(12px);
+    z-index: 100;
+  }
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    letter-spacing: 0.05em;
+    color: var(--accent);
+  }
+  .logo span { color: var(--text-muted); font-style: italic; font-size: 0.85rem; margin-left: 0.5rem; }
+  .header-right { display: flex; align-items: center; gap: 1rem; }
+
+  /* ── SEARCH ── */
+  .search-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.4rem 1rem;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    width: 220px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-bar:focus { border-color: var(--accent-dim); }
+  .search-bar::placeholder { color: var(--text-dim); }
+
+  /* ── UPLOAD BUTTON ── */
+  .btn-upload {
+    background: var(--accent);
+    color: #0e0d0b;
+    border: none;
+    border-radius: var(--radius);
+    padding: 0.45rem 1.1rem;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    letter-spacing: 0.03em;
+    transition: background 0.2s, transform 0.1s;
+  }
+  .btn-upload:hover { background: #d4b87a; }
+  .btn-upload:active { transform: scale(0.97); }
+
+  /* ── LAYOUT ── */
+  main { max-width: 1100px; margin: 0 auto; padding: 2.5rem 2rem; }
+
+  /* ── STATS BAR ── */
+  .stats-bar {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .stat { display: flex; flex-direction: column; gap: 0.1rem; }
+  .stat-num { font-family: 'Playfair Display', serif; font-size: 1.8rem; color: var(--accent); }
+  .stat-label { font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase; }
+
+  /* ── DOCUMENT GRID ── */
+  .docs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .doc-card {
+    background: var(--surface);
+    padding: 1.4rem 1.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    transition: background 0.15s;
+    position: relative;
+    cursor: default;
+  }
+  .doc-card:hover { background: var(--surface2); }
+
+  .doc-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: var(--accent);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .doc-card:hover::before { opacity: 1; }
+
+  .doc-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.2rem;
+    opacity: 0.8;
+  }
+  .doc-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    color: var(--text);
+    line-height: 1.3;
+  }
+  .doc-desc {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .doc-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+  .tag {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 0.15rem 0.5rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--accent-dim);
+    letter-spacing: 0.03em;
+  }
+  .doc-meta {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    margin-top: auto;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .doc-actions { display: flex; gap: 0.5rem; }
+  .btn-icon {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-muted);
+    padding: 0.25rem 0.6rem;
+    font-size: 0.7rem;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+  }
+  .btn-icon:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-icon.danger:hover { border-color: var(--danger); color: var(--danger); }
+  .btn-icon.view-btn:hover { border-color: var(--success); color: var(--success); }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center;
+    padding: 5rem 2rem;
+    color: var(--text-muted);
+  }
+  .empty-state .big { font-family: 'Playfair Display', serif; font-size: 3rem; opacity: 0.15; }
+  .empty-state p { font-size: 0.85rem; margin-top: 0.5rem; color: var(--text-dim); }
+
+  /* ── MODAL ── */
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .overlay.open { opacity: 1; pointer-events: all; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 2rem;
+    width: 460px;
+    max-width: 90vw;
+    transform: translateY(16px);
+    transition: transform 0.2s;
+  }
+  .overlay.open .modal { transform: translateY(0); }
+
+  .modal-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    margin-bottom: 1.5rem;
+    color: var(--accent);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .modal-close {
+    background: none; border: none;
+    color: var(--text-muted); cursor: pointer;
+    font-size: 1.1rem; line-height: 1;
+    transition: color 0.15s;
+  }
+  .modal-close:hover { color: var(--text); }
+
+  label {
+    display: block;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.4rem;
+    margin-top: 1rem;
+  }
+  label:first-of-type { margin-top: 0; }
+
+  input[type=text], textarea, input[type=file] {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    padding: 0.6rem 0.8rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input[type=text]:focus, textarea:focus { border-color: var(--accent-dim); }
+  textarea { resize: vertical; min-height: 70px; }
+  input[type=file] { cursor: pointer; padding: 0.5rem; color: var(--text-muted); }
+
+  .drop-zone {
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    position: relative;
+  }
+  .drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: rgba(201,169,110,0.04); color: var(--text-muted); }
+  .drop-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .drop-zone .drop-icon { font-size: 1.5rem; margin-bottom: 0.3rem; }
+  .drop-zone .file-name { color: var(--accent); margin-top: 0.3rem; font-family: 'DM Mono', monospace; font-size: 0.72rem; }
+
+  .modal-actions { display: flex; gap: 0.7rem; justify-content: flex-end; margin-top: 1.5rem; }
+  .btn-cancel {
+    background: none; border: 1px solid var(--border);
+    color: var(--text-muted); border-radius: var(--radius);
+    padding: 0.5rem 1.1rem; font-size: 0.82rem; cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+  }
+  .btn-cancel:hover { border-color: var(--text-muted); color: var(--text); }
+  .btn-submit {
+    background: var(--accent); color: #0e0d0b;
+    border: none; border-radius: var(--radius);
+    padding: 0.5rem 1.3rem; font-size: 0.82rem; font-weight: 500;
+    cursor: pointer; font-family: 'DM Sans', sans-serif;
+    transition: background 0.15s;
+  }
+  .btn-submit:hover { background: #d4b87a; }
+  .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 2rem; right: 2rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 0.8rem 1.2rem;
+    font-size: 0.82rem;
+    z-index: 999;
+    transform: translateY(20px); opacity: 0;
+    transition: all 0.25s;
+    max-width: 300px;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.error { border-left-color: var(--danger); }
+
+  /* ── LOADING ── */
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    display: inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── FADE IN ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .doc-card { animation: fadeUp 0.3s ease both; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 600px) {
+    header { padding: 0 1rem; }
+    main { padding: 1.5rem 1rem; }
+    .stats-bar { gap: 1.2rem; }
+    .search-bar { width: 140px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Archivum <span>PDF Library</span></div>
+  <div class="header-right">
+    <input class="search-bar" type="text" id="searchInput" placeholder="Search docs..." oninput="debounceSearch()"/>
+    <button class="btn-upload" onclick="openUploadModal()">+ Upload</button>
+  </div>
+</header>
+
+<main>
+  <div class="stats-bar">
+    <div class="stat">
+      <span class="stat-num" id="totalDocs">0</span>
+      <span class="stat-label">Documents</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num" id="totalSize">0 KB</span>
+      <span class="stat-label">Total Size</span>
+    </div>
+  </div>
+
+  <div id="docContainer">
+    <div class="empty-state">
+      <div class="big">📄</div>
+      <p>Loading documents…</p>
+    </div>
+  </div>
+</main>
+
+<!-- UPLOAD MODAL -->
+<div class="overlay" id="uploadOverlay">
+  <div class="modal">
+    <div class="modal-title">
+      Upload Document
+      <button class="modal-close" onclick="closeUploadModal()">✕</button>
+    </div>
+    <form id="uploadForm" onsubmit="submitUpload(event)">
+      <label>Title *</label>
+      <input type="text" id="upTitle" required placeholder="Document title"/>
+
+      <label>Description</label>
+      <textarea id="upDesc" placeholder="Brief description of the document…"></textarea>
+
+      <label>Tags (comma separated)</label>
+      <input type="text" id="upTags" placeholder="e.g. finance, report, 2024"/>
+
+      <label>PDF File *</label>
+      <div class="drop-zone" id="dropZone">
+        <input type="file" accept=".pdf" id="upFile" onchange="onFileSelect(this)"/>
+        <div class="drop-icon">📂</div>
+        <div>Drop PDF here or click to browse</div>
+        <div class="file-name" id="selectedFile"></div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeUploadModal()">Cancel</button>
+        <button type="submit" class="btn-submit" id="uploadBtn">Upload</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="overlay" id="editOverlay">
+  <div class="modal">
+    <div class="modal-title">
+      Edit Document
+      <button class="modal-close" onclick="closeEditModal()">✕</button>
+    </div>
+    <form id="editForm" onsubmit="submitEdit(event)">
+      <input type="hidden" id="editId"/>
+      <label>Title *</label>
+      <input type="text" id="editTitle" required/>
+
+      <label>Description</label>
+      <textarea id="editDesc"></textarea>
+
+      <label>Tags</label>
+      <input type="text" id="editTags"/>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>
+        <button type="submit" class="btn-submit">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let searchTimer = null;
+
+// ── FETCH DOCS ──────────────────────────────────────────────────────────────
+async function loadDocs(search = '') {
+  const url = search ? `/documents?search=${encodeURIComponent(search)}` : '/documents';
+  const res = await fetch(url);
+  const docs = await res.json();
+  renderDocs(docs);
+}
+
+function renderDocs(docs) {
+  const container = document.getElementById('docContainer');
+  document.getElementById('totalDocs').textContent = docs.length;
+
+  const totalBytes = docs.reduce((s, d) => s + (d.file_size || 0), 0);
+  document.getElementById('totalSize').textContent = formatSize(totalBytes);
+
+  if (!docs.length) {
+    container.innerHTML = `<div class="empty-state"><div class="big">📄</div><p>No documents found. Upload your first PDF.</p></div>`;
+    return;
+  }
+
+  const grid = document.createElement('div');
+  grid.className = 'docs-grid';
+
+  docs.forEach((doc, i) => {
+    const tags = doc.tags ? doc.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
+    const tagsHtml = tags.map(t => `<span class="tag">${t}</span>`).join('');
+    const date = new Date(doc.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+
+    const card = document.createElement('div');
+    card.className = 'doc-card';
+    card.style.animationDelay = `${i * 0.04}s`;
+    card.innerHTML = `
+      <div class="doc-icon">📄</div>
+      <div class="doc-title">${escHtml(doc.title)}</div>
+      ${doc.description ? `<div class="doc-desc">${escHtml(doc.description)}</div>` : ''}
+      ${tagsHtml ? `<div class="doc-tags">${tagsHtml}</div>` : ''}
+      <div class="doc-meta">
+        <span>${date} · ${formatSize(doc.file_size)}</span>
+        <div class="doc-actions">
+          <button class="btn-icon view-btn" onclick="viewDoc(${doc.id})">View</button>
+          <button class="btn-icon" onclick="openEditModal(${doc.id}, '${escHtml(doc.title)}', '${escHtml(doc.description)}', '${escHtml(doc.tags)}')">Edit</button>
+          <button class="btn-icon danger" onclick="deleteDoc(${doc.id})">Delete</button>
+        </div>
+      </div>`;
+    grid.appendChild(card);
+  });
+
+  container.innerHTML = '';
+  container.appendChild(grid);
+}
+
+// ── UPLOAD ──────────────────────────────────────────────────────────────────
+function openUploadModal() {
+  document.getElementById('uploadOverlay').classList.add('open');
+}
+function closeUploadModal() {
+  document.getElementById('uploadOverlay').classList.remove('open');
+  document.getElementById('uploadForm').reset();
+  document.getElementById('selectedFile').textContent = '';
+}
+
+function onFileSelect(input) {
+  const name = input.files[0]?.name || '';
+  document.getElementById('selectedFile').textContent = name;
+}
+
+async function submitUpload(e) {
+  e.preventDefault();
+  const btn = document.getElementById('uploadBtn');
+  const file = document.getElementById('upFile').files[0];
+  if (!file) { showToast('Please select a PDF file.', true); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+
+  const fd = new FormData();
+  fd.append('title', document.getElementById('upTitle').value);
+  fd.append('description', document.getElementById('upDesc').value);
+  fd.append('tags', document.getElementById('upTags').value);
+  fd.append('file', file);
+
+  try {
+    const res = await fetch('/documents', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Upload failed');
+    showToast('Document uploaded successfully.');
+    closeUploadModal();
+    loadDocs();
+  } catch(err) {
+    showToast(err.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Upload';
+  }
+}
+
+// ── VIEW ────────────────────────────────────────────────────────────────────
+function viewDoc(id) {
+  window.open(`/documents/${id}/file`, '_blank');
+}
+
+// ── EDIT ────────────────────────────────────────────────────────────────────
+function openEditModal(id, title, desc, tags) {
+  document.getElementById('editId').value = id;
+  document.getElementById('editTitle').value = title;
+  document.getElementById('editDesc').value = desc;
+  document.getElementById('editTags').value = tags;
+  document.getElementById('editOverlay').classList.add('open');
+}
+function closeEditModal() {
+  document.getElementById('editOverlay').classList.remove('open');
+}
+
+async function submitEdit(e) {
+  e.preventDefault();
+  const id = document.getElementById('editId').value;
+  const fd = new FormData();
+  fd.append('title', document.getElementById('editTitle').value);
+  fd.append('description', document.getElementById('editDesc').value);
+  fd.append('tags', document.getElementById('editTags').value);
+
+  try {
+    const res = await fetch(`/documents/${id}`, { method: 'PUT', body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Update failed');
+    showToast('Document updated.');
+    closeEditModal();
+    loadDocs(document.getElementById('searchInput').value);
+  } catch(err) {
+    showToast(err.message, true);
+  }
+}
+
+// ── DELETE ──────────────────────────────────────────────────────────────────
+async function deleteDoc(id) {
+  if (!confirm('Delete this document? This cannot be undone.')) return;
+  try {
+    const res = await fetch(`/documents/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Delete failed');
+    showToast('Document deleted.');
+    loadDocs(document.getElementById('searchInput').value);
+  } catch(err) {
+    showToast(err.message, true);
+  }
+}
+
+// ── SEARCH ──────────────────────────────────────────────────────────────────
+function debounceSearch() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    loadDocs(document.getElementById('searchInput').value);
+  }, 300);
+}
+
+// ── UTILS ────────────────────────────────────────────────────────────────────
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(() => { t.className = 'toast'; }, 3000);
+}
+
+function formatSize(bytes) {
+  if (!bytes) return '0 KB';
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ── DRAG & DROP ──────────────────────────────────────────────────────────────
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && file.name.endsWith('.pdf')) {
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    document.getElementById('upFile').files = dt.files;
+    document.getElementById('selectedFile').textContent = file.name;
+  } else {
+    showToast('Please drop a PDF file.', true);
+  }
+});
+
+// Close modals on overlay click
+document.getElementById('uploadOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeUploadModal();
+});
+document.getElementById('editOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeEditModal();
+});
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+loadDocs();
+</script>
+</body>
+</html>

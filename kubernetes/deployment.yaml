@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pdf-cms
+  labels:
+    app: pdf-cms
+spec:
+  replicas: 1          # Keep at 1 — SQLite doesn't support concurrent writers
+  selector:
+    matchLabels:
+      app: pdf-cms
+  template:
+    metadata:
+      labels:
+        app: pdf-cms
+    spec:
+      containers:
+        - name: pdf-cms
+          image: chinmayajmera/pdf-cms:latest         
+          imagePullPolicy: IfNotPresent  
+          ports:
+            - containerPort: 8000
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
